@@ -205,6 +205,18 @@ ORDER BY severity DESC, failure_rate DESC
 """, [selected["table_name"], selected["run_ts"]])
 issues = [dict(zip(c3, r)) for r in r3]
 st.dataframe(issues, use_container_width=True)
+
+# -------------------------
+# Pick which issue feedback is for
+# -------------------------
+if not issues:
+   st.info("No issue insights found for this run, so feedback cannot be linked to a specific issue.")
+   st.stop()
+issue_options = [f"{x['issue_type']}|{x['column']}" for x in issues]
+selected_issue = st.selectbox("Which issue is this feedback for?", issue_options)
+issue_type_val, column_val = selected_issue.split("|", 1)
+
+
 # ---- Feedback form
 st.markdown("### Give Feedback (Business Review)")
 decision = st.radio(
@@ -218,13 +230,14 @@ submitted_by = st.text_input("Your name/email (demo)", value="business_user@comp
 if st.button("Submit Feedback"):
     db_execute(f"""
     INSERT INTO {FEEDBACK_TBL}
-      (action_id, table_name, run_ts, decision, edited_action_text, comments, submitted_by, submitted_ts)
+      (action_id, table_name, run_ts, issue_type, `column`,
+  decision, edited_action_text, comments, submitted_by, submitted_ts)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, current_timestamp())
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, current_timestamp())
     """, [
         selected["alert_id"],
         selected["table_name"],
-        selected["run_ts"],
+        selected["run_ts"],issue_type_val,column_val,
         decision,
         edited_action if decision == "EDIT_ACTION" else None,
         comments,
