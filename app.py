@@ -1,4 +1,4 @@
-import json
+import json,os
 import streamlit as st
 from databricks import sql
 # =========================
@@ -9,10 +9,34 @@ ALERTS_TBL = f"{DB}.dq_alerts"
 RUN_INSIGHTS_TBL = f"{DB}.dq_agent_run_insights"
 ISSUE_INSIGHTS_TBL = f"{DB}.dq_agent_issue_insights"
 FEEDBACK_TBL = f"{DB}.dq_agent_feedback"
-# These will be added in Databricks App "Secrets"
-SERVER_HOSTNAME = st.secrets["server_hostname"]          # e.g. dbc-xxxx.cloud.databricks.com
-WAREHOUSE_HTTP_PATH = st.secrets["warehouse_http_path"]  # SQL Warehouse http path
-ACCESS_TOKEN = st.secrets["access_token"]                # PAT token for demo
+
+def _get_required(name: str) -> str:
+   """
+   Reads a required config from environment variables.
+   Falls back to st.secrets ONLY for local/dev usage.
+   In Databricks Apps (Option 2), env vars should be used.
+   """
+   v = os.getenv(name)
+   if v:
+       return v.strip()
+   # optional local fallback
+   try:
+       v2 = st.secrets.get(name.lower()) or st.secrets.get(name)
+       if v2:
+           return str(v2).strip()
+   except Exception:
+       pass
+   st.error(
+       f"Missing required config: {name}. "
+       f"Add it in Databricks App Secrets/Resources as an environment variable."
+   )
+   st.stop()
+# =========================
+# CONFIG
+# =========================
+SERVER_HOSTNAME      = _get_required("SERVER_HOSTNAME")        # e.g. dbc-xxxx.cloud.databricks.com
+WAREHOUSE_HTTP_PATH  = _get_required("WAREHOUSE_HTTP_PATH")    # SQL warehouse http path
+ACCESS_TOKEN         = _get_required("ACCESS_TOKEN")           # PAT for demo (later replace with OAuth)
 
 # =========================
 # DB HELPERS
