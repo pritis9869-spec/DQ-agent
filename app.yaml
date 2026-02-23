@@ -1,4 +1,10 @@
-command: ["streamlit", "run", "app.py", "--server.address", "0.0.0.0", "--server.port", "8080"]
-env:
- - name: STREAMLIT_SERVER_HEADLESS
-   value: "true"
+command:
+ - bash
+ - -lc
+ - |
+   PORT="${DATABRICKS_APP_PORT:-8501}"
+   echo "Using port=$PORT"
+   streamlit run app.py \
+     --server.address=0.0.0.0 \
+     --server.port=$PORT \
+     --server.headless=true
